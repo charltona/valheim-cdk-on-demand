@@ -6,6 +6,7 @@ import {MountPoint, Protocol} from "@aws-cdk/aws-ecs";
 import * as efs from "@aws-cdk/aws-efs";
 import * as iam from "@aws-cdk/aws-iam";
 import * as logs from "@aws-cdk/aws-logs";
+import * as r53 from "@aws-cdk/aws-route53"
 
 export class SatisfactoryCdkStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -71,7 +72,7 @@ export class SatisfactoryCdkStack extends cdk.Stack {
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
       taskRole: ecsTaskRole,
       cpu: 1024,
-      memoryLimitMiB: 4096,
+      memoryLimitMiB: 5120,
       volumes: [
         {
           name: 'SatisfactoryGameDataVolume',
@@ -129,6 +130,8 @@ export class SatisfactoryCdkStack extends cdk.Stack {
     });
 
     serviceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(7777))
+    serviceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(15000))
+    serviceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(15777))
 
     const satisfactoryServerService = new ecs.FargateService(this, 'FargateService', {
       cluster,
@@ -148,5 +151,30 @@ export class SatisfactoryCdkStack extends cdk.Stack {
     })
 
     fileSystem.connections.allowDefaultPortFrom(satisfactoryServerService.connections);
+
+    // const satisfactoryHostedZone = r53.HostedZone.fromLookup(this, 'HostedZone', {
+    //   domainName: 'hamlet.link'
+    // })
+    //
+    // const iamRoute553Policy = new iam.Policy(this, 'IamRoute53Policy', {
+    //   statements: [
+    //     new iam.PolicyStatement({
+    //       sid: 'AllowEditRecordSets',
+    //       effect: iam.Effect.ALLOW,
+    //       actions: [
+    //           'route53:GetHostedZone',
+    //           'route53:ChangeResourceRecordSets',
+    //           'route53:ListResourceRecordSets'
+    //       ],
+    //       resources: [`arn:aws:route53:::hostedzone/${satisfactoryHostedZone.hostedZoneId}`],
+    //     })
+    //   ]
+    // })
+    // iamRoute553Policy.attachToRole(ecsTaskRole);
+
+
+    // Autoscaling policy, if active connections === 0 for 30 mins, then set desiredCount to 0.
+
+    // Write lambda function to set desiredCount to 1.
   }
 }
