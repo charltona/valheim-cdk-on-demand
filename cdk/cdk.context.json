@@ -1,0 +1,11 @@
+{
+  "availability-zones:account=825155104001:region=ap-southeast-2": [
+    "ap-southeast-2a",
+    "ap-southeast-2b",
+    "ap-southeast-2c"
+  ],
+  "hosted-zone:account=825155104001:domainName=hamlet.link:region=ap-southeast-2": {
+    "Id": "/hostedzone/Z07326652201O046A8CXC",
+    "Name": "hamlet.link."
+  }
+}
