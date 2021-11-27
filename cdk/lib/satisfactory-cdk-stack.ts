@@ -8,9 +8,14 @@ import * as efs from "@aws-cdk/aws-efs";
 import * as iam from "@aws-cdk/aws-iam";
 import * as logs from "@aws-cdk/aws-logs";
 import * as r53 from "@aws-cdk/aws-route53"
+import * as lambda from "@aws-cdk/aws-lambda";
+
+interface SatisfactoryCDKStackProps extends cdk.StackProps {
+  launcherLambdaRoleArn: string;
+}
 
 export class SatisfactoryCdkStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: cdk.Construct, id: string, props: SatisfactoryCDKStackProps) {
     super(scope, id, props);
 
     const vpc = new ec2.Vpc(this, "SatisfactoryVpc", {
@@ -39,21 +44,21 @@ export class SatisfactoryCdkStack extends cdk.Stack {
 
     const efsReadWriteDataPolicy = new iam.Policy(this, 'DataRWPolicy', {
       statements: [
-          new iam.PolicyStatement({
-            sid: 'AllowReadWriteOnEFS',
-            effect: iam.Effect.ALLOW,
-            actions: [
-              'elasticfilesystem:ClientMount',
-              'elasticfilesystem:ClientWrite',
-              'elasticfilesystem:DescribeFileSystems',
-            ],
-            resources: [fileSystem.fileSystemArn],
-            conditions: {
-              StringEquals: {
-                'elasticfilesystem:AccessPointArn': accessPoint.accessPointArn,
-              }
+        new iam.PolicyStatement({
+          sid: 'AllowReadWriteOnEFS',
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'elasticfilesystem:ClientMount',
+            'elasticfilesystem:ClientWrite',
+            'elasticfilesystem:DescribeFileSystems',
+          ],
+          resources: [fileSystem.fileSystemArn],
+          conditions: {
+            StringEquals: {
+              'elasticfilesystem:AccessPointArn': accessPoint.accessPointArn,
             }
-          })
+          }
+        })
       ]
     })
 
@@ -235,5 +240,13 @@ export class SatisfactoryCdkStack extends cdk.Stack {
       ],
     });
     iamRoute53Policy.attachToRole(ecsTaskRole);
+
+    const launcherLambdaRole = iam.Role.fromRoleArn(this,
+        'LauncherLambdaRole',
+        props.launcherLambdaRoleArn);
+
+    serviceControlPolicy.attachToRole(launcherLambdaRole);
+
+
   }
 }
