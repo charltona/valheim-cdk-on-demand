@@ -11,7 +11,7 @@
 
 function send_notification ()
 {
-  [ "$1" = "startup" ] && MESSAGETEXT="Satisfactory server operational"
+  [ "$1" = "startup" ] && MESSAGETEXT="Satisfactory server operational @ flightfactory.link"
   [ "$1" = "shutdown" ] && MESSAGETEXT="Powering down Satisfactory server"
 
   ## Twilio Option
@@ -28,6 +28,11 @@ function send_notification ()
   [ -n "$SLACKWEBHOOK" ] && \
   echo "Slack webhook URL set, sending $1 message" && \
   curl --silent --data "{\"text\":\"$MESSAGETEXT\"}" --header "Content-Type: application/json" $SLACKWEBHOOK
+
+     ## Discord Webhook
+    [ -n "$DISCORD_WEBHOOK" ] && \
+    echo "Discord URL set, sending $1 message" && \
+    curl --silent --data "{\"content\":\"$MESSAGETEXT\"}" --header "Content-Type: application/json" $DISCORD_WEBHOOK
 }
 
 function zero_service ()

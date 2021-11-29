@@ -7,5 +7,9 @@
   "hosted-zone:account=825155104001:domainName=hamlet.link:region=ap-southeast-2": {
     "Id": "/hostedzone/Z07326652201O046A8CXC",
     "Name": "hamlet.link."
+  },
+  "hosted-zone:account=825155104001:domainName=flightfactory.link:region=ap-southeast-2": {
+    "Id": "/hostedzone/Z07272442968TC95O6BQN",
+    "Name": "flightfactory.link."
   }
 }

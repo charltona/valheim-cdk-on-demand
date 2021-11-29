@@ -174,7 +174,7 @@ export class SatisfactoryCdkStack extends cdk.Stack {
     fileSystem.connections.allowDefaultPortFrom(satisfactoryServerService.connections);
 
     const hostedZoneId = r53.HostedZone.fromLookup(this, 'HostedZoneLookup', {
-      domainName: 'hamlet.link'
+      domainName: 'flightfactory.link'
     })
 
     const watchDoggoContainer = new ecs.ContainerDefinition(this, 'WatchDoggoContainer', {
@@ -188,7 +188,8 @@ export class SatisfactoryCdkStack extends cdk.Stack {
         CLUSTER: 'SatisfactoryCDKCluster',
         SERVICE: 'SatisfactoryServerService',
         DNSZONE: hostedZoneId.hostedZoneId,
-        SERVERNAME: `hamlet.link`,
+        SERVERNAME: `flightfactory.link`,
+        DISCORD_WEBHOOK: process.env.DISCORD_WEBHOOK || ''
       },
       logging: new ecs.AwsLogDriver({
         logRetention: logs.RetentionDays.THREE_DAYS,
@@ -235,7 +236,7 @@ export class SatisfactoryCdkStack extends cdk.Stack {
             'route53:ChangeResourceRecordSets',
             'route53:ListResourceRecordSets',
           ],
-          resources: [`arn:aws:route53:::hostedzone/Z07326652201O046A8CXC`],
+          resources: [hostedZoneId.hostedZoneArn],
         }),
       ],
     });
