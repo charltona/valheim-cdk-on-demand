@@ -30,9 +30,9 @@ function send_notification ()
   curl --silent --data "{\"text\":\"$MESSAGETEXT\"}" --header "Content-Type: application/json" $SLACKWEBHOOK
 
      ## Discord Webhook
-    [ -n "$DISCORD_WEBHOOK" ] && \
+    [ -n "$DISCORDWEBHOOK" ] && \
     echo "Discord URL set, sending $1 message" && \
-    curl --silent --data "{\"content\":\"$MESSAGETEXT\"}" --header "Content-Type: application/json" $DISCORD_WEBHOOK
+    curl --silent --data "{\"content\":\"$MESSAGETEXT\"}" --header "Content-Type: application/json" -X POST $DISCORDWEBHOOK
 }
 
 function zero_service ()
@@ -107,6 +107,7 @@ echo "Satisfactory Game Server Detected"
 
 ## Send startup notification message
 send_notification startup
+sleep 100
 
 #echo "Checking every 5 seconds for active UDP traffic, up to $STARTUPMIN minutes..."
 #COUNTER=0

@@ -9,6 +9,10 @@ import * as iam from "@aws-cdk/aws-iam";
 import * as logs from "@aws-cdk/aws-logs";
 import * as r53 from "@aws-cdk/aws-route53"
 import * as lambda from "@aws-cdk/aws-lambda";
+import * as dotenv from 'dotenv';
+
+dotenv.config({path: path.resolve(__dirname, '../.env') });
+
 
 interface SatisfactoryCDKStackProps extends cdk.StackProps {
   launcherLambdaRoleArn: string;
@@ -189,7 +193,7 @@ export class SatisfactoryCdkStack extends cdk.Stack {
         SERVICE: 'SatisfactoryServerService',
         DNSZONE: hostedZoneId.hostedZoneId,
         SERVERNAME: `flightfactory.link`,
-        DISCORD_WEBHOOK: process.env.DISCORD_WEBHOOK || ''
+        DISCORDWEBHOOK: process.env.DISCORD_WEBHOOK || ''
       },
       logging: new ecs.AwsLogDriver({
         logRetention: logs.RetentionDays.THREE_DAYS,
