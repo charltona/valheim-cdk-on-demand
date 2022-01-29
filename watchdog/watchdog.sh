@@ -11,8 +11,8 @@
 
 function send_notification ()
 {
-  [ "$1" = "startup" ] && MESSAGETEXT="Satisfactory server operational @ flightfactory.link"
-  [ "$1" = "shutdown" ] && MESSAGETEXT="Powering down Satisfactory server"
+  [ "$1" = "startup" ] && MESSAGETEXT="Valheim server operational @ flightfactory.link"
+  [ "$1" = "shutdown" ] && MESSAGETEXT="Powering down Valheim server"
 
   ## Twilio Option
   [ -n "$TWILIOFROM" ] && [ -n "$TWILIOTO" ] && [ -n "$TWILIOAID" ] && [ -n "$TWILIOAUTH" ] && \
@@ -66,9 +66,9 @@ echo "I believe our public IP address is $PUBLICIP"
 ## update public dns record
 echo "Updating DNS record for $SERVERNAME to $PUBLICIP"
 ## prepare json file
-cat << EOF >> satisfactory-dns.json
+cat << EOF >> valheim-dns.json
 {
-  "Comment": "Fargate Public IP change for Satisfactory Server",
+  "Comment": "Fargate Public IP change for Valheim Server",
   "Changes": [
     {
       "Action": "UPSERT",
@@ -86,11 +86,11 @@ cat << EOF >> satisfactory-dns.json
   ]
 }
 EOF
-aws route53 change-resource-record-sets --hosted-zone-id $DNSZONE --change-batch file://satisfactory-dns.json
+aws route53 change-resource-record-sets --hosted-zone-id $DNSZONE --change-batch file://valheim-dns.json
 
-## Wait for Satisfactory server to start
-echo "Waiting for Satisfactory game port to start"
-echo "If we are stuck here, the Satisfactory container probably failed to start.  Waiting 20 minutes just in case..."
+## Wait for Valheim server to start
+echo "Waiting for Valheim game port to start"
+echo "If we are stuck here, the Valheim container probably failed to start.  Waiting 20 minutes just in case..."
 COUNTER=0
 while true
 do
@@ -103,7 +103,7 @@ do
     zero_service
   fi
 done
-echo "Satisfactory Game Server Detected"
+echo "Valheim Game Server Detected"
 
 ## Send startup notification message
 send_notification startup

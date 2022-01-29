@@ -14,15 +14,15 @@ import * as dotenv from 'dotenv';
 dotenv.config({path: path.resolve(__dirname, '../.env') });
 
 
-interface SatisfactoryCDKStackProps extends cdk.StackProps {
+interface ValheimCDKStackProps extends cdk.StackProps {
   launcherLambdaRoleArn: string;
 }
 
-export class SatisfactoryCdkStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props: SatisfactoryCDKStackProps) {
+export class ValheimCdkStack extends cdk.Stack {
+  constructor(scope: cdk.Construct, id: string, props: ValheimCDKStackProps) {
     super(scope, id, props);
 
-    const vpc = new ec2.Vpc(this, "SatisfactoryVpc", {
+    const vpc = new ec2.Vpc(this, "ValheimVpc", {
       maxAzs: 2,
       natGateways: 0
     })
@@ -34,7 +34,7 @@ export class SatisfactoryCdkStack extends cdk.Stack {
 
     const accessPoint = new efs.AccessPoint(this, 'AccessPoint', {
       fileSystem,
-      path: '/satisfactory',
+      path: '/valheim',
       posixUser: {
         uid: '1000',
         gid: '1000',
@@ -68,13 +68,13 @@ export class SatisfactoryCdkStack extends cdk.Stack {
 
     const ecsTaskRole = new iam.Role(this, 'TaskRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
-      description: 'Satisfactory ECS Task Role',
+      description: 'Valheim ECS Task Role',
     })
 
     efsReadWriteDataPolicy.attachToRole(ecsTaskRole);
 
-    const cluster = new ecs.Cluster(this, "SatisfactoryCluster", {
-      clusterName: 'SatisfactoryCDKCluster',
+    const cluster = new ecs.Cluster(this, "ValheimCluster", {
+      clusterName: 'ValheimCDKCluster',
       vpc,
       enableFargateCapacityProviders: true,
     })
@@ -85,7 +85,7 @@ export class SatisfactoryCdkStack extends cdk.Stack {
       memoryLimitMiB: 5120,
       volumes: [
         {
-          name: 'SatisfactoryGameDataVolume',
+          name: 'ValheimGameDataVolume',
           efsVolumeConfiguration: {
             fileSystemId: fileSystem.fileSystemId,
             transitEncryption: 'ENABLED',
@@ -98,52 +98,57 @@ export class SatisfactoryCdkStack extends cdk.Stack {
       ]
     })
 
-    const satisfactoryServerContainer = new ecs.ContainerDefinition(this, 'SatisfactoryContainer', {
-      containerName: 'SatisfactoryServer',
-      image: ecs.ContainerImage.fromRegistry('wolveix/satisfactory-server'),
+    const valheimServerContainer = new ecs.ContainerDefinition(this, 'ValheimContainer', {
+      containerName: 'ValheimServer',
+      image: ecs.ContainerImage.fromRegistry('lloesche/valheim-server'),
       portMappings: [
         {
-          containerPort: 7777,
-          hostPort: 7777,
+          containerPort: 2456,
+          hostPort: 2456,
           protocol: Protocol.UDP
         },
         {
-          containerPort: 15000,
-          hostPort: 15000,
+          containerPort: 2457,
+          hostPort: 2457,
           protocol: Protocol.UDP
         },
         {
-          containerPort: 15777,
-          hostPort: 15777,
-          protocol: Protocol.UDP
+          containerPort: 9001,
+          hostPort: 9001,
+          protocol: Protocol.TCP
         },
       ],
       taskDefinition,
       logging: new ecs.AwsLogDriver({
         logRetention: logs.RetentionDays.THREE_DAYS,
-        streamPrefix: 'SatisfactoryServer'
+        streamPrefix: 'ValheimServer'
       })
     })
 
-    const satisfactoryServerMountPoint: MountPoint = {
+    const valheimServerConfigMountPoint: MountPoint = {
       containerPath: '/config',
-      sourceVolume: 'SatisfactoryGameDataVolume',
+      sourceVolume: 'ValheimGameDataVolume',
+      readOnly: false,
+    }
+    const valheimServerDataMountPoint: MountPoint = {
+      containerPath: '/opt/valheim',
+      sourceVolume: 'ValheimGameDataVolume',
       readOnly: false,
     }
 
-    satisfactoryServerContainer.addMountPoints(satisfactoryServerMountPoint)
+    valheimServerContainer.addMountPoints(valheimServerDataMountPoint, valheimServerConfigMountPoint)
 
 
     const serviceSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSecurityGroup', {
       vpc,
-      description: 'Security Group for SatisfactoryServerService'
+      description: 'Security Group for ValheimServerService'
     });
 
-    serviceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(7777))
-    serviceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(15000))
-    serviceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(15777))
+    serviceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(2456))
+    serviceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(2457))
+    serviceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(9001))
 
-    const satisfactoryServerService = new ecs.FargateService(this, 'FargateService', {
+    const valheimServerService = new ecs.FargateService(this, 'FargateService', {
       cluster,
       capacityProviderStrategies: [
         {
@@ -154,19 +159,19 @@ export class SatisfactoryCdkStack extends cdk.Stack {
       ],
       taskDefinition,
       platformVersion: ecs.FargatePlatformVersion.LATEST,
-      serviceName: 'SatisfactoryServerService',
+      serviceName: 'ValheimServerService',
       desiredCount: 1,
       assignPublicIp: true,
       securityGroups: [serviceSecurityGroup]
     })
 
-    const autoScaling = satisfactoryServerService.autoScaleTaskCount({
+    const autoScaling = valheimServerService.autoScaleTaskCount({
       minCapacity: 0,
       maxCapacity: 1,
     });
 
     autoScaling.scaleOnMetric('ScaleDownOnCpuUsage', {
-      metric: satisfactoryServerService.metric('CPUUtilization'),
+      metric: valheimServerService.metric('CPUUtilization'),
       scalingSteps: [
         {upper: 10, change: -1},
         {lower: 50, change: 0},
@@ -175,29 +180,29 @@ export class SatisfactoryCdkStack extends cdk.Stack {
       evaluationPeriods: 4,
     })
 
-    fileSystem.connections.allowDefaultPortFrom(satisfactoryServerService.connections);
+    fileSystem.connections.allowDefaultPortFrom(valheimServerService.connections);
 
     const hostedZoneId = r53.HostedZone.fromLookup(this, 'HostedZoneLookup', {
-      domainName: 'flightfactory.link'
+      domainName: 'dimmos.link'
     })
 
-    const watchDoggoContainer = new ecs.ContainerDefinition(this, 'WatchDoggoContainer', {
-      containerName: 'WatchDoggoContainer',
+    const watchDoggoContainer = new ecs.ContainerDefinition(this, 'WatchDogContainer', {
+      containerName: 'WatchDogContainer',
       image: ecs.ContainerImage.fromAsset(
-          path.resolve(__dirname, '../../ficsit-watchdog')
+          path.resolve(__dirname, '../../watchdog')
       ),
       essential: false,
       taskDefinition,
       environment: {
-        CLUSTER: 'SatisfactoryCDKCluster',
-        SERVICE: 'SatisfactoryServerService',
+        CLUSTER: 'ValheimCDKCluster',
+        SERVICE: 'ValheimServerService',
         DNSZONE: hostedZoneId.hostedZoneId,
-        SERVERNAME: `flightfactory.link`,
+        SERVERNAME: `dimmos.link`,
         DISCORDWEBHOOK: process.env.DISCORD_WEBHOOK || ''
       },
       logging: new ecs.AwsLogDriver({
         logRetention: logs.RetentionDays.THREE_DAYS,
-        streamPrefix: 'WatchDoggoContainer',
+        streamPrefix: 'WatchDogContainer',
       })
     })
 
@@ -208,12 +213,12 @@ export class SatisfactoryCdkStack extends cdk.Stack {
           effect: iam.Effect.ALLOW,
           actions: ['ecs:*'],
           resources: [
-            satisfactoryServerService.serviceArn,
+            valheimServerService.serviceArn,
             Arn.format(
                 {
                   service: 'ecs',
                   resource: 'task',
-                  resourceName: `SatisfactoryCDKCluster/*`,
+                  resourceName: `ValheimCDKCluster/*`,
                   arnFormat: ArnFormat.SLASH_RESOURCE_NAME,
                 },
                 this

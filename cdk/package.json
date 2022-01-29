@@ -1,8 +1,8 @@
 {
-  "name": "satisfactory-cdk",
+  "name": "valheim-cdk",
   "version": "0.1.0",
   "bin": {
-    "satisfactory-cdk": "bin/satisfactory-cdk.js"
+    "valheim-cdk": "bin/valheim-cdk.js"
   },
   "scripts": {
     "build": "tsc",
