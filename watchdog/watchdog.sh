@@ -11,7 +11,7 @@
 
 function send_notification ()
 {
-  [ "$1" = "startup" ] && MESSAGETEXT="Valheim server operational @ flightfactory.link"
+  [ "$1" = "startup" ] && MESSAGETEXT="Valheim server operational @ vh.dimmos.link"
   [ "$1" = "shutdown" ] && MESSAGETEXT="Powering down Valheim server"
 
   ## Twilio Option
@@ -94,12 +94,12 @@ echo "If we are stuck here, the Valheim container probably failed to start.  Wai
 COUNTER=0
 while true
 do
-  netstat -aun | grep :7777 && break
+  netstat -aun | grep :2456 && break
   sleep 1
   COUNTER=$(($COUNTER + 1))
   if [ $COUNTER -gt 1200 ] ## server has not been detected as starting within 20 minutes
   then
-    echo 10 minutes elapsed without a minecraft server starting server listening, terminating.
+    echo 10 minutes elapsed without a valheim server starting server listening, terminating.
     zero_service
   fi
 done

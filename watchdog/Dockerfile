@@ -4,6 +4,6 @@ FROM amazon/aws-cli
 RUN yum install -y net-tools jq nmap-cat && \
     yum clean all
 
-COPY ./watchdoggo.sh .
+COPY watchdog.sh .
 
-ENTRYPOINT ["./watchdoggo.sh"]
+ENTRYPOINT ["./watchdog.sh"]

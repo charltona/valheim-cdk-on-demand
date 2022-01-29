@@ -19,8 +19,8 @@ RESPONSE_TYPES =  {
                   }
 
 DEFAULT_REGION = 'ap-southeast-2'
-DEFAULT_CLUSTER = 'SatisfactoryCDKCluster'
-DEFAULT_SERVICE = 'SatisfactoryServerService'
+DEFAULT_CLUSTER = 'ValheimCDKCluster'
+DEFAULT_SERVICE = 'ValheimServerService'
 
 REGION = os.environ.get('REGION', DEFAULT_REGION)
 CLUSTER = os.environ.get('CLUSTER', DEFAULT_CLUSTER)
@@ -76,10 +76,10 @@ def lambda_handler(event, context):
                 service=SERVICE,
                 desiredCount=1,
             )
-            message = "Starting Satisfactory Server"
+            message = "Starting Valheim Server"
             print("Updated desiredCount to 1")
         else:
-            message = "Satisfactory Server already running - try again later."
+            message = "Valheim Server already running - try again later."
             print("desiredCount already at 1")
     elif command == 'stop':
         if desired == 1:
@@ -88,10 +88,10 @@ def lambda_handler(event, context):
                 service=SERVICE,
                 desiredCount=0,
             )
-            message = "Stopping Satisfactory Server"
+            message = "Stopping Valheim Server"
             print("Updated desiredCount to 0")
         else:
-            message = "Satisfactory Server already stopped - try again later."
+            message = "Valheim Server already stopped - try again later."
             print("desiredCount already at 0")
     else:
             message = "Beep boop. Invalid command - try 'start' or 'stop'."
