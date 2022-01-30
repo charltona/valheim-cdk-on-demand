@@ -36,12 +36,12 @@ export class ValheimCdkStack extends cdk.Stack {
       fileSystem,
       path: '/valheim',
       posixUser: {
-        uid: '1000',
-        gid: '1000',
+        uid: '0',
+        gid: '0',
       },
       createAcl: {
-        ownerGid: '1000',
-        ownerUid: '1000',
+        ownerGid: '0',
+        ownerUid: '0',
         permissions: '0755'
       }
     });
@@ -81,8 +81,8 @@ export class ValheimCdkStack extends cdk.Stack {
 
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
       taskRole: ecsTaskRole,
-      cpu: 1024,
-      memoryLimitMiB: 5120,
+      cpu: 512,
+      memoryLimitMiB: 3072,
       volumes: [
         {
           name: 'ValheimGameDataVolume',
@@ -117,12 +117,25 @@ export class ValheimCdkStack extends cdk.Stack {
           hostPort: 9001,
           protocol: Protocol.TCP
         },
+        {
+          containerPort: 22,
+          hostPort: 22,
+          protocol: Protocol.TCP
+        }
       ],
       taskDefinition,
       logging: new ecs.AwsLogDriver({
         logRetention: logs.RetentionDays.THREE_DAYS,
         streamPrefix: 'ValheimServer'
-      })
+      }),
+      environment: {
+        SERVER_NAME: "DimmosServer",
+        WORLD_NAME: "DimmoWorld",
+        SERVER_PUBLIC: "false",
+        SERVER_PASS: process.env.SERVER_PASS!,
+        BACKUP_IF_IDLE: "false",
+        ADMINLIST_IDS: "76561197972993222 76561198024307310 76561197998682695 76561197972250772"
+      }
     })
 
     const valheimServerConfigMountPoint: MountPoint = {
@@ -160,7 +173,7 @@ export class ValheimCdkStack extends cdk.Stack {
       taskDefinition,
       platformVersion: ecs.FargatePlatformVersion.LATEST,
       serviceName: 'ValheimServerService',
-      desiredCount: 1,
+      desiredCount: 0,
       assignPublicIp: true,
       securityGroups: [serviceSecurityGroup]
     })
@@ -173,17 +186,17 @@ export class ValheimCdkStack extends cdk.Stack {
     autoScaling.scaleOnMetric('ScaleDownOnCpuUsage', {
       metric: valheimServerService.metric('CPUUtilization'),
       scalingSteps: [
-        {upper: 10, change: -1},
+        {upper: 15, change: -1},
         {lower: 50, change: 0},
       ],
-      cooldown: cdk.Duration.minutes(20),
-      evaluationPeriods: 4,
+      cooldown: cdk.Duration.minutes(30),
+      evaluationPeriods: 5,
     })
 
     fileSystem.connections.allowDefaultPortFrom(valheimServerService.connections);
 
     const hostedZoneId = r53.HostedZone.fromLookup(this, 'HostedZoneLookup', {
-      domainName: 'dimmos.link'
+      domainName: process.env.HOSTED_ZONE_NAME!
     })
 
     const watchDoggoContainer = new ecs.ContainerDefinition(this, 'WatchDogContainer', {
@@ -197,7 +210,7 @@ export class ValheimCdkStack extends cdk.Stack {
         CLUSTER: 'ValheimCDKCluster',
         SERVICE: 'ValheimServerService',
         DNSZONE: hostedZoneId.hostedZoneId,
-        SERVERNAME: `dimmos.link`,
+        SERVERNAME: process.env.SERVER_NAME!,
         DISCORDWEBHOOK: process.env.DISCORD_WEBHOOK || ''
       },
       logging: new ecs.AwsLogDriver({
